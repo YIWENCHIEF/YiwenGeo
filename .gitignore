@@ -1,0 +1,18 @@
+# 本机环境相关，绝不入库
+local.properties
+*.jks
+*.keystore
+keystore.properties
+*.env
+
+# Gradle / 构建产物
+.gradle/
+build/
+.kotlin/
+*.apk
+*.aab
+
+# IDE
+.idea/
+*.iml
+.DS_Store

@@ -1,0 +1,46 @@
+name: Release APK
+
+# 推送 v* 标签（如 v3.7）时自动构建 debug APK 并创建 GitHub Release 附上安装包
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept SDK licenses
+        run: yes | sdkmanager --licenses > /dev/null || true
+
+      - name: Build debug APK
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug
+
+      - name: Rename APK to product name
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk \
+             "YiwenGeo-${GITHUB_REF_NAME}.apk"
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "YiwenGeo ${{ github.ref_name }}"
+          files: YiwenGeo-*.apk
+          generate_release_notes: true
+          draft: false
+          prerelease: false

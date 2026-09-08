@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 锚点图标：矢量水滴针，边缘圆滑无马赛克（替代 osmdroid 内置位图 Marker） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="52dp"
+    android:viewportWidth="40"
+    android:viewportHeight="52">
+    <!-- 水滴形主体 -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M20,2 C10.6,2 3,9.6 3,19 C3,31 20,50 20,50 C20,50 37,31 37,19 C37,9.6 29.4,2 20,2 Z" />
+    <!-- 内圈白点 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M20,19 m-7,0 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0" />
+    <!-- 中心红点 -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M20,19 m-3.5,0 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0" />
+</vector>
