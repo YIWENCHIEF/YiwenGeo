@@ -258,6 +258,8 @@ fun YiwenGeoScreen() {
     var showSearch by remember { mutableStateOf(false) }
     var showManual by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
+    // 悬浮角标可见性（持久化设置；隐藏时保活窗口变纯透明而非移除）
+    var overlayBadge by remember { mutableStateOf(MockLocationService.overlayBadgeVisible(context)) }
     var showMockGuide by remember { mutableStateOf(false) }
     var selfCheck by remember { mutableStateOf<String?>(null) }
     // 开屏加载：等真实位置就绪（精度≤100m）再进地图，避免"先北京后飞回"跳变；8s超时兜底
@@ -543,6 +545,23 @@ fun YiwenGeoScreen() {
                                             runCatching {
                                                 context.startActivity(
                                                     Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS))
+                                            }
+                                        })
+                                    DropdownMenuItem(
+                                        text = { Text(if (overlayBadge) "隐藏悬浮角标（保活窗口转透明）" else "显示悬浮角标") },
+                                        leadingIcon = {
+                                            Icon(if (overlayBadge) Icons.Default.VisibilityOff
+                                                 else Icons.Default.Visibility, null)
+                                        },
+                                        onClick = {
+                                            showMenu = false
+                                            overlayBadge = !overlayBadge
+                                            MockLocationService.setOverlayBadgeVisible(context, overlayBadge)
+                                            // 注入运行中即时生效；未运行时下次启动服务自然读取设置
+                                            if (MockLocationService.isRunning) {
+                                                context.startService(
+                                                    Intent(context, MockLocationService::class.java)
+                                                        .putExtra(MockLocationService.EXTRA_MODE, "overlay"))
                                             }
                                         })
                                 }

@@ -1,5 +1,6 @@
 # 本机环境相关，绝不入库
 local.properties
+.mimosa/
 *.jks
 *.keystore
 keystore.properties

@@ -46,15 +46,27 @@ class MockLocationService : Service() {
         const val CHANNEL_ID = "mock_gps"
         const val NOTIF_ID = 1001
 
-        const val EXTRA_MODE = "mode"          // "static" | "stop" | "restore"
+        const val EXTRA_MODE = "mode"          // "static" | "stop" | "restore" | "overlay"
         const val EXTRA_LAT = "lat"
         const val EXTRA_LNG = "lng"
         const val EXTRA_SPEED = "speed"
 
         private const val PREF = "mock_state"
+        private const val PREF_SETTINGS = "app_settings"
+        private const val KEY_OVERLAY_BADGE = "overlay_badge"
 
         var isRunning = false
             private set
+
+        /** 设置项：悬浮角标是否可见（默认显示）。隐藏时窗口仍在，只是纯透明 */
+        fun overlayBadgeVisible(context: Context): Boolean =
+            context.getSharedPreferences(PREF_SETTINGS, Context.MODE_PRIVATE)
+                .getBoolean(KEY_OVERLAY_BADGE, true)
+
+        fun setOverlayBadgeVisible(context: Context, visible: Boolean) {
+            context.getSharedPreferences(PREF_SETTINGS, Context.MODE_PRIVATE).edit()
+                .putBoolean(KEY_OVERLAY_BADGE, visible).apply()
+        }
 
         fun saveState(context: Context, mode: String, lat: Double, lng: Double) {
             context.getSharedPreferences(PREF, Context.MODE_PRIVATE).edit()
@@ -102,12 +114,10 @@ class MockLocationService : Service() {
         if (overlayView != null) return
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         val tv = TextView(this).apply {
-            text = "● 虚拟定位中"
-            setTextColor(Color.WHITE)
-            setBackgroundColor(Color.argb(200, 229, 57, 53))
             textSize = 11f
             setPadding(24, 10, 24, 10)
         }
+        applyOverlayStyle(tv)
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
         else
@@ -126,6 +136,29 @@ class MockLocationService : Service() {
             y = 120
         }
         runCatching { windowManager?.addView(tv, params); overlayView = tv }
+    }
+
+    /**
+     * 按设置渲染角标外观。
+     * 隐藏 ≠ 移除窗口：悬浮窗是后台保活手段之一，必须一直挂在 WindowManager 上，
+     * 所以隐藏时只把内容清空并设 alpha=0，变成纯透明窗口，用户不可见但系统可见。
+     */
+    private fun applyOverlayStyle(tv: TextView) {
+        if (overlayBadgeVisible(this)) {
+            tv.text = "● 虚拟定位中"
+            tv.setTextColor(Color.WHITE)
+            tv.setBackgroundColor(Color.argb(200, 229, 57, 53))
+            tv.alpha = 1f
+        } else {
+            tv.text = ""
+            tv.setBackgroundColor(Color.TRANSPARENT)
+            tv.alpha = 0f
+        }
+    }
+
+    /** 运行中切换设置：原地刷新角标外观，不打断注入循环 */
+    private fun updateOverlayAppearance() {
+        mainHandler.post { overlayView?.let { applyOverlayStyle(it) } }
     }
 
     private fun hideOverlay() {
@@ -149,6 +182,8 @@ class MockLocationService : Service() {
                 stopSelf()
                 return START_NOT_STICKY
             }
+            // 仅切换悬浮角标可见性（设置变更），不动注入循环
+            "overlay" -> updateOverlayAppearance()
             "static" -> {
                 mode = "static"
                 curLat = intent.getDoubleExtra(EXTRA_LAT, curLat)
