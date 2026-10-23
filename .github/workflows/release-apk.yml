@@ -20,14 +20,19 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # android-actions/setup-android@v3 的默认包配置因 Google 2026.9 调整 SDK 包而损坏
+      # （上游 issue #539/#546 未修），改用 runner 预装 SDK 的 sdkmanager 显式安装所需包。
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Accept SDK licenses
-        run: yes | sdkmanager --licenses > /dev/null || true
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+        run: |
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Build debug APK
         run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
           chmod +x gradlew
           ./gradlew :app:assembleDebug
 
